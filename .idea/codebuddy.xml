@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CodebuddyPersistentProjectState">
+    <option name="promptHistory">
+      <list>
+        <option value="Create a web scraping tool for me to use for Penetration Testing" />
+        <option value="I don't have anything in specific in mind at the moment, so I would like for the program to give a user friendly way of providing me with options" />
+        <option value="I would like a sleek and modern GUI if possible, maybe integrate some purple for a background gradient" />
+        <option value="I would like PyQt6, I would like if the application used white and purple and for purple gradients it could be a lightly dark purple fading to a lighter rich purple colour, and please include light and dark options" />
+        <option value="Please proceed and while you're at it what specific package for the widgets am I meant to install since I'm not sure which to use for PyCharm from the Python Packages panel" />
+        <option value="There are a few things I want tweaked first please&#10;When the theme is toggled the buttons and text fields should follow the theme too&#10;I want the buttons to look seemless, so smoothing out their edges would look better&#10;And please ensure the text is still readable when the dark theme is selected" />
+        <option value="The program crashed when clicking the toggle themes button" />
+        <option value="The interface for this web scraping app has been set up, now please make it functional" />
+        <option value="Yes please, and I want the functionality where the user can look through the classes in the output and see what specific classes hold in them to make it easier to work with for data collection" />
+        <option value="The new element text box doesn't follow the theme when switching themes, and then I would like for you to add the rest of the functionality please" />
+        <option value="Remove the &quot;Settings&quot; button since there is already a &quot;Scraping options&quot; Button&#10;Then make the program remember previous scrapes that have been performed and store it to be accessed by the &quot;Results&quot; Button&#10;Then also add a smart search function for the user to search contents of scraped classes for getting specific information like prices and product names for example" />
+      </list>
+    </option>
+    <option name="selectedModel" value="codebuddy:CLAUDE_3.5_SONNET_V7" />
+    <option name="ttsEnabled" value="false" />
+  </component>
+</project>
