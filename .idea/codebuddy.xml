@@ -14,9 +14,10 @@
         <option value="Yes please, and I want the functionality where the user can look through the classes in the output and see what specific classes hold in them to make it easier to work with for data collection" />
         <option value="The new element text box doesn't follow the theme when switching themes, and then I would like for you to add the rest of the functionality please" />
         <option value="Remove the &quot;Settings&quot; button since there is already a &quot;Scraping options&quot; Button&#10;Then make the program remember previous scrapes that have been performed and store it to be accessed by the &quot;Results&quot; Button&#10;Then also add a smart search function for the user to search contents of scraped classes for getting specific information like prices and product names for example" />
+        <option value="How good would you say you are with code?" />
       </list>
     </option>
-    <option name="selectedModel" value="codebuddy:CLAUDE_3.5_SONNET_V7" />
+    <option name="selectedModel" value="codebuddy:GPT4o_Mini_V8" />
     <option name="ttsEnabled" value="false" />
   </component>
 </project>

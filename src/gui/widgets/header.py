@@ -12,7 +12,7 @@ class Header(QWidget):
         self.setFixedHeight(60)
         
         # Title
-        title = QLabel("Web Scraping Tool")
+        title = QLabel("WebScrape")
         title.setStyleSheet("font-size: 24px; font-weight: bold;")
         
         # Theme toggle button
