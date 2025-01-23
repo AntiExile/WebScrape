@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QStackedWidget, 
-    QLineEdit, QPushButton, QTextEdit, QMessageBox, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QFileDialog)
-from PyQt6.QtCore import Qt
-from src.scraping.scraper import WebScraper
+    QLineEdit, QPushButton, QTextEdit, QMessageBox, QTreeWidget, 
+    QTreeWidgetItem, QHBoxLayout, QFileDialog, QSplitter)
+from PyQt6.QtCore import Qt, QUrl
+from src.gui.widgets.browser_view import BrowserView
 import json
 
 class ContentArea(QWidget):
@@ -34,6 +35,11 @@ class ContentArea(QWidget):
         self.save_button.clicked.connect(self.save_results)
         button_layout.addWidget(self.save_button)
         
+        # Browser view
+        self.browser_view = BrowserView()
+        self.browser_view.recorder.interaction_recorded.connect(self.on_interaction)
+        self.browser_view.page().loadFinished.connect(self.enable_interaction_recording)
+        
         # Results area
         self.results_tree = QTreeWidget()
         self.results_tree.setHeaderLabels(['Element', 'Details'])
@@ -42,18 +48,29 @@ class ContentArea(QWidget):
         self.raw_results = QTextEdit()
         self.raw_results.setReadOnly(True)
         
+        # Create splitter for browser and results
+        results_widget = QWidget()
+        results_layout = QVBoxLayout()
+        results_layout.addWidget(self.results_tree)
+        results_layout.addWidget(self.raw_results)
+        results_widget.setLayout(results_layout)
+        
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(self.browser_view)
+        splitter.addWidget(results_widget)
+        
         # Initialize scraper
         self.scraper = WebScraper()
         self.setup_scraper_connections()
         
+        # Add all widgets to main layout
         layout.addWidget(self.url_input)
         layout.addLayout(button_layout)
-        layout.addWidget(self.results_tree)
-        layout.addWidget(self.raw_results)
+        layout.addWidget(splitter)
         
         self.setLayout(layout)
-        self.current_results = None  # Store current results
-
+        self.current_results = None
+        
     def setup_scraper_connections(self):
         self.scraper.progress_updated.connect(self.update_progress)
         self.scraper.status_updated.connect(self.update_status)
@@ -65,94 +82,82 @@ class ContentArea(QWidget):
         if not url:
             self.show_error("Please enter a URL")
             return
-
+        
+        self.browser_view.setUrl(QUrl(url))
         self.start_button.setEnabled(False)
         self.results_tree.clear()
-        self.raw_results.clear()
         self.scraper.scrape(url)
+        self.enable_interaction_recording()
+        
+    def toggle_recording(self):
+        self.browser_view.recorder.recording = not self.browser_view.recorder.recording
+        self.record_button.setText(
+            "Stop Recording" if self.browser_view.recorder.recording 
+            else "Record Interactions"
+        )
+        
+    def enable_interaction_recording(self):
+        self.browser_view.recorder.recording = True
+        self.record_button.setText("Stop Recording")
+        
+    def on_interaction(self, data):
+        interaction_item = QTreeWidgetItem(self.results_tree, [
+            data['type'],
+            f"XPath: {data['xpath']}"
+        ])
+        if 'value' in data:
+            QTreeWidgetItem(interaction_item, ['Value', data['value']])
+        if 'text' in data:
+            QTreeWidgetItem(interaction_item, ['Text', data['text']])
 
-    def update_progress(self, value):
-        status_bar = self.window().status_bar
-        status_bar.progress_bar.setVisible(True)
-        status_bar.progress_bar.setValue(value)
-
-    def update_status(self, message):
-        self.window().status_bar.status_label.setText(message)
-
-    def display_results(self, data):
-        self.start_button.setEnabled(True)
-        self.save_button.setEnabled(True)
-        self.current_results = data
-        
-        # Display raw JSON data
-        formatted_results = json.dumps(data, indent=2)
-        self.raw_results.setText(formatted_results)
-        
-        # Clear and populate the tree widget
-        self.results_tree.clear()
-        
-        # Add basic information
-        basic_info = QTreeWidgetItem(self.results_tree, ['Basic Information'])
-        QTreeWidgetItem(basic_info, ['Title', data.get('title', 'No title')])
-        
-        # Add classes information
-        classes_root = QTreeWidgetItem(self.results_tree, ['HTML Classes'])
-        classes = data.get('classes', {})
-        
-        for class_name, info in classes.items():
-            class_item = QTreeWidgetItem(classes_root, [
-                class_name,
-                f"Used {info['count']} times"
-            ])
+            js_code = f"""
+        let element = document;
+        try {{
+            element = document.evaluate(
+                '{data["xpath"]}', 
+                document, 
+                null, 
+                XPathResult.FIRST_ORDERED_NODE_TYPE, 
+                null
+            ).singleNodeValue;
             
-            # Add tag types
-            tags_item = QTreeWidgetItem(class_item, [
-                'Tag Types',
-                ', '.join(info['tag_types'])
-            ])
+            if(element) {{
+                element.style.outline = '2px solid red';
+                setTimeout(() => {{
+                    element.style.outline = '';
+                }}, 1000);
+            }}
+        }} catch(e) {{
+            console.error('XPath evaluation failed:', e);
+        }}
+    """
             
-            # Add sample content
-            if info['sample_content']:
-                samples_item = QTreeWidgetItem(class_item, ['Sample Content'])
-                for sample in info['sample_content']:
-                    QTreeWidgetItem(samples_item, ['Sample', sample[:100]])
+    def simulate_interaction(self, item):
+    # Get the XPath from the tree item
+        xpath = item.text(1).replace('XPath: ', '')
+        interaction_type = item.text(0)
+    
+        js_code = f"""
+            let element = document.evaluate(
+                '{xpath}',
+                document,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
         
-        self.results_tree.expandToDepth(1)
-        
-        self.window().status_bar.progress_bar.setVisible(False)
+            if(element) {{
+                if('{interaction_type}' === 'click') {{
+                    element.click();
+                }} else if('{interaction_type}' === 'input') {{
+                    element.focus();
+                }}
+            }}
+        """
+        self.browser_view.page().runJavaScript(js_code)
 
-    def show_error(self, message):
-        self.start_button.setEnabled(True)
-        self.save_button.setEnabled(False)
-        QMessageBox.critical(self, "Error", message)
-        self.window().status_bar.status_label.setText("Ready")
-        self.window().status_bar.progress_bar.setVisible(False)
+def setup_ui(self):
+    
+    self.results_tree.itemDoubleClicked.connect(self.simulate_interaction)
 
-    def save_results(self):
-        if not self.current_results:
-            return
-            
-        file_dialog = QFileDialog(self)
-        file_dialog.setDefaultSuffix('json')
-        file_dialog.setNameFilter('JSON Files (*.json);;CSV Files (*.csv);;HTML Files (*.html)')
-        
-        if file_dialog.exec():
-            selected_files = file_dialog.selectedFiles()
-            if not selected_files:
-                return
-                
-            file_path = selected_files[0]
-            file_format = file_path.split('.')[-1].lower()
-            
-            try:
-                if file_format == 'json':
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        json.dump(self.current_results, f, indent=2)
-                elif file_format == 'csv':
-                    self.save_as_csv(file_path)
-                elif file_format == 'html':
-                    self.save_as_html(file_path)
-                    
-                self.window().status_bar.status_label.setText(f"Results saved to {file_path}")
-            except Exception as e:
-                self.show_error(f"Error saving file: {str(e)}")
+    self.browser_view.page().runJavaScript(js_code)

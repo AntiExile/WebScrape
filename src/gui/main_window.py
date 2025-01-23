@@ -51,3 +51,4 @@ class MainWindow(QMainWindow):
         # Add status bar
         self.status_bar = StatusBar()
         self.layout.addWidget(self.status_bar)
+        self.sidebar.record_clicked.connect(self.content_area.toggle_recording)

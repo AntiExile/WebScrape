@@ -17,7 +17,7 @@
         <option value="How good would you say you are with code?" />
       </list>
     </option>
-    <option name="selectedModel" value="codebuddy:GPT4o_Mini_V8" />
+    <option name="selectedModel" value="codebuddy:CLAUDE_3.5_SONNET_V7" />
     <option name="ttsEnabled" value="false" />
   </component>
 </project>
