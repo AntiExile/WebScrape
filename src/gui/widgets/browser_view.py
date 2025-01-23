@@ -1,5 +1,6 @@
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6.QtWebEngineCore import QWebEngineSettings
+from PyQt6.QtCore import pyqtSignal, QObject, Qt
 from PyQt6.QtWebChannel import QWebChannel
 
 class InteractionRecorder(QObject):
@@ -18,10 +19,13 @@ class BrowserView(QWebEngineView):
         self.page().setWebChannel(self.channel)
         self.channel.registerObject("recorder", self.recorder)
         self.page().loadFinished.connect(self.inject_tracking_code)
-        self.page().settings().setAttribute(
-            self.page().settings().WebAttribute.DeveloperExtrasEnabled, 
-            True
-        )
+
+        settings = self.page().settings()
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.DeveloperExtrasEnabled, True)
+
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
@@ -30,10 +34,10 @@ class BrowserView(QWebEngineView):
             menu.addSeparator()
             inspect_action = menu.addAction("Inspect Element")
             inspect_action.triggered.connect(
-            lambda: self.page().triggerAction(
-                self.page().WebAction.InspectElement
+                lambda: self.page().triggerAction(
+                    self.page().WebAction.InspectElement
+                )
             )
-        )
             menu.exec(self.mapToGlobal(position))
 
     def inject_tracking_code(self):
