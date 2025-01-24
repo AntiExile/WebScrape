@@ -1,4 +1,5 @@
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWidgets import QMenu
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtCore import pyqtSignal, QObject, Qt
 from PyQt6.QtWebChannel import QWebChannel
@@ -24,21 +25,32 @@ class BrowserView(QWebEngineView):
         settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.DeveloperExtrasEnabled, True)
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
-        def show_context_menu(self, position):
-            menu = self.page().createStandardContextMenu()
-            menu.addSeparator()
-            inspect_action = menu.addAction("Inspect Element")
-            inspect_action.triggered.connect(
-                lambda: self.page().triggerAction(
-                    self.page().WebAction.InspectElement
-                )
-            )
-            menu.exec(self.mapToGlobal(position))
+    def show_context_menu(self, position):
+        menu = QMenu(self)
+        
+        # Add standard context menu
+        standard_menu = self.page().createStandardContextMenu()
+        menu.addActions(standard_menu.actions())
+        
+        # Add separator
+        menu.addSeparator()
+        
+        # Add custom actions
+        back_action = menu.addAction("Back")
+        back_action.triggered.connect(self.back)
+        
+        forward_action = menu.addAction("Forward")
+        forward_action.triggered.connect(self.forward)
+        
+        reload_action = menu.addAction("Reload")
+        reload_action.triggered.connect(self.reload)
+        
+        # Show menu at cursor position
+        menu.exec(self.mapToGlobal(position))
 
     def inject_tracking_code(self):
         js_code = """

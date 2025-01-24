@@ -6,14 +6,18 @@ from src.gui.widgets.browser_view import BrowserView
 import json
 
 class ContentArea(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setup_ui()
-        
+        self._is_recording = False
+
     def setup_ui(self):
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         layout.setSpacing(15)
-        
+        self.browser_view = BrowserView()
+        layout.addWidget(self.browser_view)
+        layout.setContentsMargins(0, 0, 0, 0)
+
         # URL input section
         self.url_input = QLineEdit()
         self.url_input.setPlaceholderText("Enter URL to scrape...")
@@ -60,6 +64,13 @@ class ContentArea(QWidget):
         
         layout.addWidget(splitter)
         self.setLayout(layout)
+
+    def toggle_recording(self):
+        self._is_recording = not self._is_recording
+        if self._is_recording:
+            self.browser_view.recorder
+        else:
+            self.browser_view.recorder.stop_recording()
 
     def save_results(self):
         if not self.current_results:

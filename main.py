@@ -15,6 +15,16 @@ def main():
     temp_view = QWebEngineView()
     settings = temp_view.page().settings()
     
+# Get absolute path to resources
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(base_path, "src", "resources", "icons", "AntieLogo.png")
+
+    theme_manager = ThemeManager()
+    app.setWindowIcon(QIcon(icon_path))
+    window = MainWindow(theme_manager)
+    window.show()
+    return app.exec()
+
     # Enable features using enum values directly
     settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
     settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
