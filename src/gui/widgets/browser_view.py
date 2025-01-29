@@ -1,4 +1,5 @@
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWidgets import QMenu
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtCore import pyqtSignal, QObject, Qt
 from PyQt6.QtWebChannel import QWebChannel
