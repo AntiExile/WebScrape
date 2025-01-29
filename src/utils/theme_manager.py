@@ -53,15 +53,24 @@ class ThemeManager:
                     color: {theme['text'].name()};
                     border: none;
                     border-radius: 5px;
-                    padding: 8px 15px;
-                    font-weight: bold;
-                    transition: background-color 0.2s;
+                    padding: 8px 16px;
                 }}
                 
                 QPushButton:hover {{
                     background-color: {theme['accent'].name()};
-                    color: white;
-                    transition: background-color 0.2s;
+                }}
+                
+                QPushButton:pressed {{
+                    background-color: {theme['secondary'].name()};
+                }}
+                
+                QPushButton[class="primary-button"] {{
+                    background-color: {theme['accent'].name()};
+                    color: {theme['text'].name()};
+                }}
+                
+                QPushButton[class="primary-button"]:hover {{
+                    background-color: {theme['secondary'].name()};
                 }}
                 
                 QLineEdit, QTextEdit {{
