@@ -9,6 +9,7 @@ class ContentArea(QWidget):
     def __init__(self):
         super().__init__()
         self.setup_ui()
+        self.recording = False  # Add recording state
         
     def setup_ui(self):
         layout = QVBoxLayout()
@@ -180,3 +181,16 @@ class ContentArea(QWidget):
             }}
         """
         self.browser_view.page().runJavaScript(js_code)
+        
+    # Add toggle_recording method
+    def toggle_recording(self):
+        """Toggle the recording state of the browser view."""
+        self.recording = not self.recording
+        self.browser_view.recorder.recording = self.recording
+        
+        # Update UI to show recording state
+        if self.recording:
+            self.start_button.setText("Stop Recording")
+            self.results_tree.clear()  # Clear previous recordings
+        else:
+            self.start_button.setText("Start Recording")

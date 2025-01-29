@@ -19,26 +19,28 @@ class BrowserView(QWebEngineView):
         self.page().setWebChannel(self.channel)
         self.channel.registerObject("recorder", self.recorder)
         self.page().loadFinished.connect(self.inject_tracking_code)
-
+        
+        # Enable settings with correct WebAttribute enum
         settings = self.page().settings()
-        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.ScrollAnimatorEnabled, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.DeveloperExtrasEnabled, True)
-
+        settings.setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+        
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
-        def show_context_menu(self, position):
-            menu = self.page().createStandardContextMenu()
-            menu.addSeparator()
-            inspect_action = menu.addAction("Inspect Element")
-            inspect_action.triggered.connect(
-                lambda: self.page().triggerAction(
-                    self.page().WebAction.InspectElement
-                )
+    def show_context_menu(self, position):
+        menu = self.page().createStandardContextMenu()
+        menu.addSeparator()
+        inspect_action = menu.addAction("Inspect Element")
+        inspect_action.triggered.connect(
+            lambda: self.page().triggerAction(
+                self.page().WebAction.InspectElement
             )
-            menu.exec(self.mapToGlobal(position))
+        )
+        menu.exec(self.mapToGlobal(position))
 
     def inject_tracking_code(self):
         js_code = """
@@ -86,4 +88,4 @@ class BrowserView(QWebEngineView):
         });
         """
         self.page().runJavaScript(js_code)
-        self.recorder.recording = True 
+        self.recorder.recording = True

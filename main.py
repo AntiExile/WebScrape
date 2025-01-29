@@ -10,18 +10,24 @@ from src.gui.main_window import MainWindow
 from src.utils.theme_manager import ThemeManager
 from PyQt6.QtGui import QIcon
 
+# Move QApplication creation and high DPI setting to top level
+QApplication.setHighDpiScaleFactorRoundingPolicy(
+    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+)
+app = QApplication(sys.argv)
+
 def main():
     # Create temporary view to access settings
     temp_view = QWebEngineView()
     settings = temp_view.page().settings()
     
-    # Enable features using enum values directly
-    settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
+    # Enable WebEngine settings with correct WebAttribute enum
+    settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars, True)
     settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
-
+    settings.setAttribute(QWebEngineSettings.WebAttribute.ScrollAnimatorEnabled, True)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+    
     theme_manager = ThemeManager()
     app.setWindowIcon(QIcon(r"E:\WebScrapeOG\Icon\AntieLogo.png"))
     window = MainWindow(theme_manager)
@@ -29,9 +35,4 @@ def main():
     return app.exec()
 
 if __name__ == "__main__":
-    # Set high DPI scaling before QApplication
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
-    )
-    app = QApplication(sys.argv)
     sys.exit(main())
