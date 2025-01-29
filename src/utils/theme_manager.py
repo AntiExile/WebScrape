@@ -4,7 +4,8 @@ from PyQt6.QtCore import Qt
 # Update ThemeManager with comprehensive styling
 class ThemeManager:
     def __init__(self):
-        self.current_theme = "light"
+        # Change from "light" to "dark"
+        self.current_theme = "dark"
         self.themes = {
             "light": {
                 "background_start": QColor(255, 255, 255),
