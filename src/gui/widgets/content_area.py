@@ -197,3 +197,10 @@ class ContentArea(QWidget):
             self.results_tree.clear()  # Clear previous recordings
         else:
             self.start_button.setText("Start Recording")
+
+    def update_settings(self, settings):
+        """Update content area based on new settings"""
+        self.auto_scroll = settings['auto_scroll']
+        self.default_save_format = settings['save_format']
+        self.highlight_elements = settings['highlight_elements']
+        self.record_screenshots = settings['record_screenshots']

@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 class Sidebar(QWidget):
     
     record_clicked = pyqtSignal()
+    settings_clicked = pyqtSignal()  # Add new signal
 
     def __init__(self):
         super().__init__()
@@ -29,9 +30,7 @@ class Sidebar(QWidget):
         # Navigation buttons
         other_buttons = [
             "Scraping Options",
-            "Results",
-            "Settings",
-            "Help"
+            "Results"
         ]
         
         for button_text in other_buttons:
@@ -39,6 +38,19 @@ class Sidebar(QWidget):
             button.setFixedHeight(40)
             button.setProperty("class", "sidebar-button")
             layout.addWidget(button)
+            
+        # Settings button
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.setFixedHeight(40)
+        self.settings_button.setProperty("class", "sidebar-button")
+        self.settings_button.clicked.connect(self.settings_clicked.emit)
+        layout.addWidget(self.settings_button)
+        
+        # Help button
+        help_button = QPushButton("Help")
+        help_button.setFixedHeight(40)
+        help_button.setProperty("class", "sidebar-button")
+        layout.addWidget(help_button)
         
         layout.addStretch()
         self.setLayout(layout)

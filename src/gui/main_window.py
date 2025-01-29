@@ -4,11 +4,14 @@ from .widgets.sidebar import Sidebar
 from .widgets.header import Header
 from .widgets.content_area import ContentArea
 from .widgets.status_bar import StatusBar
+from .widgets.settings_dialog import SettingsDialog  # Add this import
+from src.utils.settings_manager import SettingsManager  # Add this import
 
 class MainWindow(QMainWindow):
     def __init__(self, theme_manager):
         super().__init__()
         self.theme_manager = theme_manager
+        self.settings_manager = SettingsManager()  # Add settings manager
         self.setWindowTitle("WebScrape")
         self.setMinimumSize(1200, 800)
         
@@ -45,3 +48,11 @@ class MainWindow(QMainWindow):
         
         # Connect signals
         self.sidebar.record_clicked.connect(self.content_area.toggle_recording)
+        self.sidebar.settings_clicked.connect(self.show_settings)  # Add this line
+        
+    def show_settings(self):
+        settings_dialog = SettingsDialog(self.settings_manager, self)
+        if settings_dialog.exec():
+            # Settings were saved, update any necessary components
+            settings = self.settings_manager.get_settings()
+            self.content_area.update_settings(settings)
