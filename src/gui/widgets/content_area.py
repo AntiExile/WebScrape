@@ -14,55 +14,48 @@ class ContentArea(QWidget):
     def setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
-        self.browser_view = BrowserView()
-        layout.addWidget(self.browser_view)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # URL input section
+        # Control section (URL input and buttons)
+        control_layout = QHBoxLayout()
+        
+        # URL input
         self.url_input = QLineEdit()
         self.url_input.setPlaceholderText("Enter URL to scrape...")
         self.url_input.setFixedHeight(40)
+        control_layout.addWidget(self.url_input)
         
-        # Start button
+        # Buttons
         self.start_button = QPushButton("Start Scraping")
         self.start_button.setFixedHeight(40)
         self.start_button.setProperty("class", "primary-button")
         self.start_button.clicked.connect(self.start_scraping)
+        control_layout.addWidget(self.start_button)
         
-        # Button container
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.start_button)
-        
-        # Save button
         self.save_button = QPushButton("Save Results")
         self.save_button.setEnabled(False)
         self.save_button.clicked.connect(self.save_results)
-        button_layout.addWidget(self.save_button)
+        control_layout.addWidget(self.save_button)
         
-        # Browser view
+        # Main content area
+        content_layout = QHBoxLayout()
+        
+        # Browser view on the left
         self.browser_view = BrowserView()
         self.browser_view.recorder.interaction_recorded.connect(self.on_interaction)
+        content_layout.addWidget(self.browser_view, stretch=2)  # Give it more space
         
-        # Results area
+        # Results tree on the right
         self.results_tree = QTreeWidget()
         self.results_tree.setHeaderLabels(['Element', 'Details'])
         self.results_tree.setColumnWidth(0, 200)
         self.results_tree.itemDoubleClicked.connect(self.simulate_interaction)
+        content_layout.addWidget(self.results_tree, stretch=1)  # Give it less space
         
-        # Layout setup
-        layout.addWidget(self.url_input)
-        layout.addLayout(button_layout)
+        # Add layouts to main layout
+        layout.addLayout(control_layout)
+        layout.addLayout(content_layout)
         
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(self.browser_view)
-        
-        results_widget = QWidget()
-        results_layout = QVBoxLayout()
-        results_layout.addWidget(self.results_tree)
-        results_widget.setLayout(results_layout)
-        splitter.addWidget(results_widget)
-        
-        layout.addWidget(splitter)
         self.setLayout(layout)
 
     def toggle_recording(self):
