@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QMenu
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtCore import pyqtSignal, QObject, Qt
 from PyQt6.QtWebChannel import QWebChannel
+from PyQt6.QtGui import QPalette, QColor
 
 class InteractionRecorder(QObject):
     interaction_recorded = pyqtSignal(dict)
@@ -20,6 +21,15 @@ class BrowserView(QWebEngineView):
         self.page().setWebChannel(self.channel)
         self.channel.registerObject("recorder", self.recorder)
         self.page().loadFinished.connect(self.inject_tracking_code)
+        
+        # Set transparent background until page loads
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Base, QColor(40, 30, 60))  # Dark theme base color
+        self.setPalette(palette)
+        
+        # Add custom CSS for web content background
+        self.page().setBackgroundColor(QColor(40, 30, 60))
         
         # Enable settings with correct WebAttribute enum
         settings = self.page().settings()
