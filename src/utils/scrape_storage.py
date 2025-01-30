@@ -43,3 +43,17 @@ class ScrapeStorage:
             with open(filepath, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return None
+
+    def delete_scrape(self, timestamp):
+        """Delete a specific scrape by timestamp"""
+        try:
+            # List all files in the directory
+            for filename in os.listdir(self.storage_dir):
+                if filename.endswith('.json') and timestamp in filename:
+                    filepath = os.path.join(self.storage_dir, filename)
+                    os.remove(filepath)
+                    return True
+            return False
+        except Exception as e:
+            print(f"Error deleting scrape: {e}")
+            return False

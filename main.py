@@ -35,6 +35,97 @@ def create_rounded_icon(path, size=64):
     
     return QIcon(result)
 
+def apply_theme(self, window):
+    try:
+        theme = self.themes[self.current_theme]
+        
+        gradient = f"""
+            QMainWindow {{
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 {theme['background_start'].name()},
+                    stop: 1 {theme['background_end'].name()}
+                );
+            }}
+            
+            QPushButton {{
+                background-color: {theme['button_bg'].name()};
+                color: {theme['text'].name()};
+                border: none;
+                border-radius: 5px;
+                padding: 8px 16px;
+                transition: background-color 0.3s;
+            }}
+            
+            QPushButton:hover {{
+                background-color: {theme['accent'].name()};
+            }}
+            
+            QPushButton:pressed {{
+                background-color: {theme['secondary'].name()};
+            }}
+            
+            /* Style both primary and sidebar buttons the same way */
+            QPushButton[class="primary-button"],
+            QPushButton[class="sidebar-button"],
+            #save_button {{
+                background-color: {theme['button_bg'].name()};
+                color: {theme['text'].name()};
+            }}
+            
+            QPushButton[class="primary-button"]:hover,
+            QPushButton[class="sidebar-button"]:hover,
+            #save_button:hover {{
+                background-color: {theme['accent'].name()};
+            }}
+            
+            QPushButton[class="primary-button"]:pressed,
+            QPushButton[class="sidebar-button"]:pressed,
+            #save_button:pressed {{
+                background-color: {theme['secondary'].name()};
+            }}
+            
+            QLineEdit, QTextEdit {{
+                background-color: {theme['background_start'].name()};
+                color: {theme['text'].name()};
+                border: 1px solid {theme['accent'].name()};
+                border-radius: 5px;
+                selection-background-color: {theme['accent'].name()};
+                padding: 5px;
+            }}
+            
+            QLabel {{
+                color: {theme['text'].name()};
+            }}
+            
+            QTreeWidget {{
+                background-color: {theme['background_start'].name()};
+                color: {theme['text'].name()};
+                border: 1px solid {theme['accent'].name()};
+                border-radius: 5px;
+            }}
+            
+            QTreeWidget::item {{
+                padding: 5px;
+            }}
+            
+            QTreeWidget::item:selected {{
+                background-color: {theme['accent'].name()};
+                color: white;
+            }}
+            
+            QTreeWidget::branch {{
+                background: {theme['background_start'].name()};
+                border: none;
+                padding: 2px;
+            }}
+        """
+        
+        window.setStyleSheet(gradient)
+    except Exception as e:
+        print(f"Error applying theme: {e}")
+        return
+
 def main():
     # Create temporary view to access settings
     temp_view = QWebEngineView()

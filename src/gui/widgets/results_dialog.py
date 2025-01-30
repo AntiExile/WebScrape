@@ -24,26 +24,82 @@ class ResultsDialog(QDialog):
         search_layout.addWidget(self.search_input)
         layout.addLayout(search_layout)
         
-        # Results tree
+        # Results tree with multiple selection enabled
         self.results_tree = QTreeWidget()
+        self.results_tree.setSelectionMode(QTreeWidget.SelectionMode.MultiSelection)  # Enable multiple selection
         self.results_tree.setHeaderLabels(['URL', 'Date', 'Elements Found'])
         self.results_tree.setColumnWidth(0, 300)
         self.results_tree.setColumnWidth(1, 150)
         self.results_tree.itemDoubleClicked.connect(self.load_scrape)
         layout.addWidget(self.results_tree)
         
-        # Buttons
+        # Button layout
         button_layout = QHBoxLayout()
+        
+        # Selection info label
+        self.selection_label = QLabel("0 items selected")
+        button_layout.addWidget(self.selection_label)
+        
+        button_layout.addStretch()
         
         load_button = QPushButton("Load Selected")
         load_button.clicked.connect(self.load_selected_scrape)
         button_layout.addWidget(load_button)
+        
+        delete_button = QPushButton("Delete Selected")
+        delete_button.clicked.connect(self.delete_selected_scrapes)
+        button_layout.addWidget(delete_button)
         
         close_button = QPushButton("Close")
         close_button.clicked.connect(self.close)
         button_layout.addWidget(close_button)
         
         layout.addLayout(button_layout)
+        
+        # Connect selection changed signal
+        self.results_tree.itemSelectionChanged.connect(self.update_selection_count)
+
+    def update_selection_count(self):
+        """Update the selection count label"""
+        count = len(self.results_tree.selectedItems())
+        self.selection_label.setText(f"{count} item{'s' if count != 1 else ''} selected")
+
+    def delete_selected_scrapes(self):
+        """Delete multiple selected scrapes"""
+        selected_items = self.results_tree.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select scrapes to delete.")
+            return
+            
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Are you sure you want to delete {len(selected_items)} selected scrape(s)?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            deleted_count = 0
+            for item in selected_items:
+                date_str = item.text(1)
+                try:
+                    dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                    timestamp = dt.strftime("%Y%m%d_%H%M%S")
+                    
+                    if self.scrape_storage.delete_scrape(timestamp):
+                        root = self.results_tree.invisibleRootItem()
+                        root.removeChild(item)
+                        deleted_count += 1
+                except ValueError as e:
+                    print(f"Error processing date: {e}")
+                    
+            if deleted_count > 0:
+                QMessageBox.information(self, "Success", 
+                    f"Successfully deleted {deleted_count} scrape{'s' if deleted_count != 1 else ''}.")
+            else:
+                QMessageBox.critical(self, "Error", "Could not delete any scrapes.")
+            
+            self.update_selection_count()
     
     def load_scrapes(self):
         """Load and display all saved scrapes"""

@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QStackedWidget,
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QTextCharFormat, QSyntaxHighlighter, QColor, QFont
 from src.gui.widgets.browser_view import BrowserView
+from datetime import datetime
 import json
 import re
 
@@ -70,6 +71,7 @@ class ContentArea(QWidget):
         
         self.save_button = QPushButton("Save Results")
         self.save_button.setEnabled(False)
+        self.save_button.setObjectName("save_button")  # Add this line
         self.save_button.clicked.connect(self.save_results)
         control_layout.addWidget(self.save_button)
         
@@ -114,22 +116,34 @@ class ContentArea(QWidget):
             self.browser_view.recorder.stop_recording()
 
     def save_results(self):
+        """Save the current scraping results"""
         if not self.current_results:
             QMessageBox.warning(self, "No Results", "No scraping results to save.")
             return
             
         try:
-            # Save to storage
+            # Count total elements found
+            total_elements = 0
+            if 'classes' in self.current_results:
+                for class_info in self.current_results['classes'].values():
+                    total_elements += class_info['count']
+            
+            # Save to storage with proper element count
             filepath = self.window().scrape_storage.save_scrape(
                 self.url_input.text(),
-                self.current_results
+                {
+                    'url': self.url_input.text(),
+                    'timestamp': datetime.now().isoformat(),
+                    'total_elements': total_elements,
+                    'content': self.current_results
+                }
             )
             
-            # Also allow saving to file if needed
+            # Show success message with element count
             save_to_file = QMessageBox.question(
                 self,
                 "Save to File",
-                "Results saved to history. Would you also like to save to a file?",
+                f"Results saved to history ({total_elements} elements found). Would you also like to save to a file?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
             
@@ -138,26 +152,24 @@ class ContentArea(QWidget):
                     self,
                     "Save Results",
                     "",
-                    "CSV Files (*.csv);;HTML Files (*.html);;All Files (*.*)"
+                    "CSV Files (*.csv);;HTML Files (*.html);;JSON Files (*.json)"
                 )
                 
                 if file_path:
                     with open(file_path, 'w', encoding='utf-8') as f:
                         json.dump(self.current_results, f, indent=4)
                     
-            QMessageBox.information(self, "Success", "Results saved successfully!")
+            QMessageBox.information(self, "Success", f"Results saved successfully! {total_elements} elements found.")
+            
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save results: {str(e)}")
 
     def start_scraping(self):
+        """Start the scraping process"""
         url = self.url_input.text().strip()
         
         if not url:
-            QMessageBox.warning(
-                self,
-                "Invalid URL",
-                "Please enter a URL to scrape."
-            )
+            QMessageBox.warning(self, "Invalid URL", "Please enter a URL to scrape.")
             return
             
         if not url.startswith(('http://', 'https://')):
@@ -169,14 +181,110 @@ class ContentArea(QWidget):
             self.save_button.setEnabled(False)
             self.browser_view.setUrl(QUrl(url))
             
+            # Enable save button when page is loaded
+            self.browser_view.loadFinished.connect(self._on_page_load_finished)
+            
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error",
-                f"Failed to start scraping: {str(e)}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to start scraping: {str(e)}")
             self.start_button.setEnabled(True)
             self.url_input.setEnabled(True)
+
+    def _on_page_load_finished(self, success):
+        """Handle page load completion"""
+        if success:
+            self.browser_view.page().toHtml(self._process_html_content)
+            self.start_button.setEnabled(True)
+            self.url_input.setEnabled(True)
+            self.save_button.setEnabled(True)
+        else:
+            QMessageBox.critical(self, "Error", "Failed to load page")
+            self.start_button.setEnabled(True)
+            self.url_input.setEnabled(True)
+
+    def _process_html_content(self, html_content):
+        """Process the HTML content and store results"""
+        # Store the parsed results
+        self.current_results = {
+            'url': self.url_input.text(),
+            'timestamp': datetime.now().isoformat(),
+            'content': self._parse_html_content(html_content)
+        }
+        self.update_html_view()
+
+    def _parse_html_content(self, html_content):
+        """Parse HTML content and extract structured data"""
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Create a dictionary to store the parsed data
+        parsed_data = {
+            'title': soup.title.string if soup.title else 'No title',
+            'classes': {},
+            'headings': [],
+            'links': [],
+            'images': [],
+            'forms': []
+        }
+        
+        # Parse HTML classes and their elements
+        for element in soup.find_all(class_=True):
+            classes = element.get('class')
+            for class_name in classes:
+                if class_name not in parsed_data['classes']:
+                    parsed_data['classes'][class_name] = {
+                        'count': 0,
+                        'tag_types': set(),
+                        'sample_content': []
+                    }
+                parsed_data['classes'][class_name]['count'] += 1
+                parsed_data['classes'][class_name]['tag_types'].add(element.name)
+                
+                # Store a sample of the content (up to 3 samples)
+                if len(parsed_data['classes'][class_name]['sample_content']) < 3:
+                    content = element.get_text().strip()
+                    if content:
+                        parsed_data['classes'][class_name]['sample_content'].append(content)
+        
+        # Convert sets to lists for JSON serialization
+        for class_info in parsed_data['classes'].values():
+            class_info['tag_types'] = list(class_info['tag_types'])
+        
+        # Extract headings
+        parsed_data['headings'] = [
+            {'level': int(h.name[1]), 'text': h.get_text().strip()}
+            for h in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+        ]
+        
+        # Extract links
+        parsed_data['links'] = [
+            {'text': a.get_text().strip(), 'href': a.get('href')}
+            for a in soup.find_all('a', href=True)
+        ]
+        
+        # Extract images
+        parsed_data['images'] = [
+            {'src': img.get('src'), 'alt': img.get('alt', '')}
+            for img in soup.find_all('img', src=True)
+        ]
+        
+        # Extract forms
+        parsed_data['forms'] = [
+            {
+                'action': form.get('action', ''),
+                'method': form.get('method', 'get'),
+                'inputs': [
+                    {
+                        'type': input_tag.get('type', 'text'),
+                        'name': input_tag.get('name', ''),
+                        'id': input_tag.get('id', '')
+                    }
+                    for input_tag in form.find_all('input')
+                ]
+            }
+            for form in soup.find_all('form')
+        ]
+        
+        return parsed_data
 
     def on_interaction(self, data):
         interaction_item = QTreeWidgetItem(self.results_tree, [
