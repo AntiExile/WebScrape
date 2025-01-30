@@ -45,6 +45,41 @@ class HTMLHighlighter(QSyntaxHighlighter):
 class ContentArea(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # Define categories and their patterns for HTML parsing
+        self.categories = {
+            'Page Title': {
+                'pattern': r'<title[^>]*>(.*?)</title>',
+                'prefix': '📄 '
+            },
+            'Navigation Links': {
+                'pattern': r'<a[^>]*?href="([^"]*)"[^>]*>(.*?)</a>',
+                'prefix': '🔗 '
+            },
+            'Main Headings': {
+                'pattern': r'<h1[^>]*>(.*?)</h1>',
+                'prefix': '📌 '
+            },
+            'Sub Headings': {
+                'pattern': r'<h[2-6][^>]*>(.*?)</h[2-6]>',
+                'prefix': '📎 '
+            },
+            'Forms': {
+                'pattern': r'<form[^>]*?action="([^"]*)"[^>]*>.*?</form>',
+                'prefix': '📝 '
+            },
+            'Input Fields': {
+                'pattern': r'<input[^>]*?(?:type="([^"]*)")?[^>]*>',
+                'prefix': '⌨️ '
+            },
+            'Images': {
+                'pattern': r'<img[^>]*?src="([^"]*)"[^>]*?(?:alt="([^"]*)")?[^>]*>',
+                'prefix': '🖼️ '
+            },
+            'Lists': {
+                'pattern': r'<(?:ul|ol)[^>]*>.*?</(?:ul|ol)>',
+                'prefix': '📋 '
+            }
+        }
         self.setup_ui()
         self.recording = False  # Add recording state
         
@@ -203,13 +238,78 @@ class ContentArea(QWidget):
 
     def _process_html_content(self, html_content):
         """Process the HTML content and store results"""
-        # Store the parsed results
-        self.current_results = {
-            'url': self.url_input.text(),
-            'timestamp': datetime.now().isoformat(),
-            'content': self._parse_html_content(html_content)
-        }
-        self.update_html_view()
+        # Parse the HTML
+        parsed_data = self._parse_html_content(html_content)
+        self.current_results = parsed_data
+        
+        # Clear existing items
+        self.results_tree.clear()
+        
+        # Add parsed data to tree
+        # Title
+        title_item = QTreeWidgetItem(self.results_tree, ['Page Title', parsed_data['title']])
+        
+        # Classes
+        if parsed_data['classes']:
+            classes_item = QTreeWidgetItem(self.results_tree, ['Classes', f"{len(parsed_data['classes'])} found"])
+            for class_name, info in parsed_data['classes'].items():
+                class_item = QTreeWidgetItem(classes_item, [
+                    class_name,
+                    f"Used {info['count']} times"
+                ])
+                # Add tag types
+                QTreeWidgetItem(class_item, ['Tag Types', ', '.join(info['tag_types'])])
+                # Add samples
+                if info['sample_content']:
+                    samples_item = QTreeWidgetItem(class_item, ['Sample Content', ''])
+                    for sample in info['sample_content']:
+                        QTreeWidgetItem(samples_item, ['Sample', sample[:100]])
+        
+        # Headings
+        if parsed_data['headings']:
+            headings_item = QTreeWidgetItem(self.results_tree, ['Headings', f"{len(parsed_data['headings'])} found"])
+            for heading in parsed_data['headings']:
+                QTreeWidgetItem(headings_item, [
+                    f"H{heading['level']}", 
+                    heading['text']
+                ])
+        
+        # Links
+        if parsed_data['links']:
+            links_item = QTreeWidgetItem(self.results_tree, ['Links', f"{len(parsed_data['links'])} found"])
+            for link in parsed_data['links']:
+                QTreeWidgetItem(links_item, [
+                    link['text'] or 'No text',
+                    link['href']
+                ])
+        
+        # Images
+        if parsed_data['images']:
+            images_item = QTreeWidgetItem(self.results_tree, ['Images', f"{len(parsed_data['images'])} found"])
+            for img in parsed_data['images']:
+                QTreeWidgetItem(images_item, [
+                    img['alt'] or 'No alt text',
+                    img['src']
+                ])
+        
+        # Forms
+        if parsed_data['forms']:
+            forms_item = QTreeWidgetItem(self.results_tree, ['Forms', f"{len(parsed_data['forms'])} found"])
+            for form in parsed_data['forms']:
+                form_item = QTreeWidgetItem(forms_item, [
+                    'Form',
+                    f"Action: {form['action']}, Method: {form['method']}"
+                ])
+                inputs_item = QTreeWidgetItem(form_item, ['Inputs', f"{len(form['inputs'])} found"])
+                for input_field in form['inputs']:
+                    QTreeWidgetItem(inputs_item, [
+                        input_field['type'],
+                        f"name: {input_field['name']}, id: {input_field['id']}"
+                    ])
+        
+        # Expand top-level items
+        for i in range(self.results_tree.topLevelItemCount()):
+            self.results_tree.topLevelItem(i).setExpanded(True)
 
     def _parse_html_content(self, html_content):
         """Parse HTML content and extract structured data"""
@@ -373,54 +473,13 @@ class ContentArea(QWidget):
         html_content = re.sub(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', '', html_content)
         html_content = re.sub(r'<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>', '', html_content)
         
-        # Define categories and their patterns
-        categories = {
-            'Page Title': {
-                'pattern': r'<title[^>]*>(.*?)</title>',
-                'prefix': '📄 '
-            },
-            'Navigation Links': {
-                'pattern': r'<a[^>]*?href="([^"]*)"[^>]*>(.*?)</a>',
-                'prefix': '🔗 '
-            },
-            'Main Headings': {
-                'pattern': r'<h1[^>]*>(.*?)</h1>',
-                'prefix': '📌 '
-            },
-            'Sub Headings': {
-                'pattern': r'<h[2-6][^>]*>(.*?)</h[2-6]>',
-                'prefix': '📎 '
-            },
-            'Forms': {
-                'pattern': r'<form[^>]*?action="([^"]*)"[^>]*>.*?</form>',
-                'prefix': '📝 '
-            },
-            'Input Fields': {
-                'pattern': r'<input[^>]*?(?:type="([^"]*)")?[^>]*>',
-                'prefix': '⌨️ '
-            },
-            'Images': {
-                'pattern': r'<img[^>]*?src="([^"]*)"[^>]*?(?:alt="([^"]*)")?[^>]*>',
-                'prefix': '🖼️ '
-            },
-            'Lists': {
-                'pattern': r'<(?:ul|ol)[^>]*>.*?</(?:ul|ol)>',
-                'prefix': '📋 '
-            },
-            'Tables': {
-                'pattern': r'<table[^>]*>.*?</table>',
-                'prefix': '📊 '
-            },
-            'Meta Information': {
-                'pattern': r'<meta[^>]*?(?:name|property)="([^"]*)"[^>]*?content="([^"]*)"[^>]*>',
-                'prefix': 'ℹ️ '
-            }
-        }
+        # Store elements and their XPaths for highlighting
+        self.element_positions = {}
+        current_position = 0
         
-        # Create formatted output
         formatted_output = "=== Page Structure Overview ===\n\n"
         
-        for category, config in categories.items():
+        for category, config in self.categories.items():
             matches = re.finditer(config['pattern'], html_content, re.DOTALL)
             items = list(matches)
             
@@ -430,29 +489,137 @@ class ContentArea(QWidget):
                 formatted_output += f"{'-' * 40}\n"
                 
                 for item in items:
-                    if category == 'Navigation Links':
-                        url, text = item.groups()
-                        formatted_output += f"{config['prefix']}Link: {text.strip()} -> {url}\n"
-                    elif category == 'Images':
-                        src = item.group(1)
-                        alt = item.group(2) if item.group(2) else 'No alt text'
-                        formatted_output += f"{config['prefix']}Image: {alt} ({src})\n"
-                    elif category == 'Meta Information':
-                        name, content = item.groups()
-                        formatted_output += f"{config['prefix']}{name}: {content}\n"
-                    elif category == 'Input Fields':
-                        input_type = item.group(1) if item.group(1) else 'text'
-                        formatted_output += f"{config['prefix']}Type: {input_type}\n"
-                    else:
-                        content = item.group(1) if item.groups() else item.group(0)
-                        formatted_output += f"{config['prefix']}{content.strip()}\n"
-                
-                formatted_output += "\n"
+                    line = ""
+                    try:
+                        if category == 'Navigation Links':
+                            url, text = item.groups()
+                            if url and text:  # Check if values exist
+                                line = f"{config['prefix']}Link: {text.strip()} -> {url}\n"
+                                xpath = f"//a[@href='{url}']"
+                        elif category == 'Images':
+                            src = item.group(1)
+                            alt = item.group(2) if item.group(2) else 'No alt text'
+                            if src:  # Check if src exists
+                                line = f"{config['prefix']}Image: {alt} ({src})\n"
+                                xpath = f"//img[@src='{src}']"
+                        else:
+                            content = item.group(1) if item.groups() else item.group(0)
+                            if content:  # Check if content exists
+                                line = f"{config['prefix']}{content.strip()}\n"
+                                # Create appropriate XPath based on category
+                                if category == 'Page Title':
+                                    xpath = "//title"
+                                elif category == 'Main Headings':
+                                    xpath = f"//h1[contains(text(), '{content.strip()}')]"
+                                elif category == 'Sub Headings':
+                                    xpath = f"//h2[contains(text(), '{content.strip()}')]|//h3[contains(text(), '{content.strip()}')]"
+                                else:
+                                    continue
+                        
+                        # Only store position and add line if we have content
+                        if line:
+                            self.element_positions[current_position] = xpath
+                            current_position += len(line)
+                            formatted_output += line
+                    except (AttributeError, IndexError) as e:
+                        print(f"Error processing {category} item: {e}")
+                        continue
         
         # Set up HTML viewer with formatting
         self.html_viewer.setFont(QFont("Consolas", 10))
+        self.html_viewer.mouseMoveEvent = self.on_html_viewer_mouse_move
+        self.html_viewer.leaveEvent = self.on_html_viewer_leave
         highlighter = HTMLHighlighter(self.html_viewer.document())
         self.html_viewer.setPlainText(formatted_output)
+
+    def on_html_viewer_mouse_move(self, event):
+        """Handle mouse movement over the HTML viewer"""
+        cursor = self.html_viewer.cursorForPosition(event.pos())
+        position = cursor.position()
+        
+        # Find the closest element position
+        closest_pos = None
+        for pos in self.element_positions:
+            if pos <= position:
+                if closest_pos is None or pos > closest_pos:
+                    closest_pos = pos
+        
+        if closest_pos is not None:
+            xpath = self.element_positions[closest_pos]
+            self.highlight_element_in_browser(xpath)
+
+    def on_html_viewer_leave(self, event):
+        """Handle mouse leaving the HTML viewer"""
+        # Remove any existing highlights
+        self.browser_view.page().runJavaScript("""
+            document.querySelectorAll('.webscrape-highlight').forEach(el => {
+                el.style.outline = '';
+                el.classList.remove('webscrape-highlight');
+            });
+        """)
+
+    def highlight_element_in_browser(self, xpath):
+        """Highlight the element in the browser view"""
+        # Escape special characters in xpath
+        def escape_xpath_string(xpath_str):
+            if not xpath_str:
+                return "''"
+            if '"' not in xpath_str:
+                return f'"{xpath_str}"'
+            if "'" not in xpath_str:
+                return f"'{xpath_str}'"
+            return f"concat('{xpath_str.replace("'", "',\"'\",'")}','')"
+
+        try:
+            # Clean the XPath expression
+            if 'contains' in xpath:
+                # Handle contains() function
+                base, text = xpath.split('contains(text(), ', 1)
+                text = text.rsplit(')', 1)[0].strip("'\"")
+                xpath = f"{base}contains(text(), {escape_xpath_string(text)})"
+            
+            # Escape single quotes in the entire xpath
+            xpath = xpath.replace("'", "\\'")
+            
+            js_code = """
+            (function() {
+                // Remove previous highlights
+                document.querySelectorAll('.webscrape-highlight').forEach((el) => {
+                    el.style.outline = '';
+                    el.classList.remove('webscrape-highlight');
+                });
+                
+                try {
+                    const evaluator = new XPathEvaluator();
+                    const result = evaluator.evaluate(
+                        `%s`,
+                        document,
+                        null,
+                        XPathResult.FIRST_ORDERED_NODE_TYPE,
+                        null
+                    );
+                    
+                    const element = result.singleNodeValue;
+                    if(element) {
+                        element.classList.add('webscrape-highlight');
+                        element.style.outline = '2px solid #ff4444';
+                        element.style.outlineOffset = '2px';
+                        element.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        
+                        // Add highlight effect
+                        element.style.transition = 'all 0.3s';
+                        element.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
+                    }
+                } catch(e) {
+                    // Silently handle XPath errors
+                    console.debug('XPath evaluation:', e);
+                }
+            })();
+            """ % xpath
+            
+            self.browser_view.page().runJavaScript(js_code)
+        except Exception as e:
+            print(f"Error in highlight_element_in_browser: {e}")
 
     def set_html_content(self, html_content):
         """Set the HTML content in the viewer"""

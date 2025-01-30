@@ -135,12 +135,32 @@ def main():
     temp_view = QWebEngineView()
     settings = temp_view.page().settings()
     
-    # Enable WebEngine settings with correct WebAttribute enum
-    settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars, True)
+    # Core settings
+    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.AllowRunningInsecureContent, True)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
+    
+    # CORS and Security settings - removed WebSecurityEnabled
+    settings.setAttribute(QWebEngineSettings.WebAttribute.XSSAuditingEnabled, False)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.AllowGeolocationOnInsecureOrigins, True)
+    
+    # Performance settings
     settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
     settings.setAttribute(QWebEngineSettings.WebAttribute.ScrollAnimatorEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+    settings.setAttribute(QWebEngineSettings.WebAttribute.DnsPrefetchEnabled, True)
+    
+    # Configure profile for CORS and caching
+    profile = QWebEngineProfile.defaultProfile()
+    profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.MemoryHttpCache)
+    profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.AllowPersistentCookies)
+    profile.setHttpCacheMaximumSize(100 * 1024 * 1024)  # 100MB cache
+    
+    # Set user agent with CORS-friendly headers
+    profile.setHttpUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/91.0.4472.124 Safari/537.36"
+    )
     
     theme_manager = ThemeManager()
     
