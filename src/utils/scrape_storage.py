@@ -1,15 +1,26 @@
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 
 class ScrapeStorage:
     def __init__(self):
-        self.storage_dir = "saved_scrapes"
+        # Get user's documents folder
+        self.storage_dir = os.path.join(
+            str(Path.home()), 
+            "Documents", 
+            "WebScrape",
+            "saved_scrapes"
+        )
+        print(f"Storage directory path: {self.storage_dir}")  # Debug print
+        
+        # Create directories if they don't exist
         if not os.path.exists(self.storage_dir):
-            os.makedirs(self.storage_dir)
+            print(f"Creating directory: {self.storage_dir}")  # Debug print
+            os.makedirs(self.storage_dir, exist_ok=True)  # Added exist_ok=True for safety
             
     def save_scrape(self, url, data):
-        """Save a scrape result with timestamp"""
+        """Save a scrape result with timestamp to user's documents"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"scrape_{timestamp}.json"
         filepath = os.path.join(self.storage_dir, filename)

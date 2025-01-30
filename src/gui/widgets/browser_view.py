@@ -1,9 +1,10 @@
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QMenu
-from PyQt6.QtWebEngineCore import QWebEngineSettings
-from PyQt6.QtCore import pyqtSignal, QObject, Qt
+from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineScript
+from PyQt6.QtCore import pyqtSignal, QObject, Qt, QUrl
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtGui import QPalette, QColor
+import os
 
 class InteractionRecorder(QObject):
     interaction_recorded = pyqtSignal(dict)
@@ -18,6 +19,19 @@ class BrowserView(QWebEngineView):
         super().__init__()
         self.recorder = InteractionRecorder()
         self.channel = QWebChannel()
+        
+        # Add the QWebChannel JavaScript API
+        script = QWebEngineScript()
+        script.setName("qwebchannel")
+        script.setSourceCode(
+            open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                            "resources", "qwebchannel.js")).read()
+        )
+        script.setWorldId(QWebEngineScript.ScriptWorldId.MainWorld)
+        script.setInjectionPoint(QWebEngineScript.InjectionPoint.DocumentCreation)
+        script.setRunsOnSubFrames(True)
+        
+        self.page().scripts().insert(script)
         self.page().setWebChannel(self.channel)
         self.channel.registerObject("recorder", self.recorder)
         self.page().loadFinished.connect(self.inject_tracking_code)

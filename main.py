@@ -126,6 +126,10 @@ def apply_theme(self, window):
         print(f"Error applying theme: {e}")
         return
 
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+icon_path = os.path.join(script_dir, "Icon", "AntieLogo.png")
+
 def main():
     # Create temporary view to access settings
     temp_view = QWebEngineView()
@@ -140,8 +144,8 @@ def main():
     
     theme_manager = ThemeManager()
     
-    # Create and set rounded icon
-    rounded_icon = create_rounded_icon(r"E:\WebScrapeOG\Icon\AntieLogo.png")
+    # Create and set rounded icon using relative path
+    rounded_icon = create_rounded_icon(icon_path)
     app.setWindowIcon(rounded_icon)
     
     window = MainWindow(theme_manager)
