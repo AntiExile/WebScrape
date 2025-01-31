@@ -8,6 +8,7 @@ class Sidebar(QWidget):
     record_clicked = pyqtSignal()
     settings_clicked = pyqtSignal()
     results_clicked = pyqtSignal()
+    unload_clicked = pyqtSignal()  # Add new signal
 
     def __init__(self):
         super().__init__()
@@ -38,6 +39,13 @@ class Sidebar(QWidget):
         self.settings_button.setProperty("class", "sidebar-button")
         self.settings_button.clicked.connect(self.settings_clicked.emit)
         layout.addWidget(self.settings_button)
+        
+        # Unload button
+        self.unload_button = QPushButton("Unload Scrape")
+        self.unload_button.setFixedHeight(40)
+        self.unload_button.setProperty("class", "sidebar-button")
+        self.unload_button.clicked.connect(self.unload_clicked.emit)
+        layout.addWidget(self.unload_button)
         
         # Help button
         help_button = QPushButton("Help")

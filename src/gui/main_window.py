@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         self.sidebar.record_clicked.connect(self.content_area.toggle_recording)
         self.sidebar.settings_clicked.connect(self.show_settings)  # Add this line
         self.sidebar.results_clicked.connect(self.show_results)  # Add this line
+        self.sidebar.unload_clicked.connect(self.content_area.unload_current_scrape)  # Add this line
         
     def show_settings(self):
         settings_dialog = SettingsDialog(self.settings_manager, self)

@@ -110,27 +110,64 @@ class ResultsDialog(QDialog):
             url = scrape.get('url', 'No URL')
             date = datetime.fromisoformat(scrape['timestamp']).strftime("%Y-%m-%d %H:%M:%S")
             
-            # Get element count from different possible data structures
-            content = scrape.get('data', scrape)
+            # Get content from nested data structure
+            content = None
+            if 'data' in scrape and 'content' in scrape['data']:
+                content = scrape['data']['content']
+            elif 'content' in scrape:
+                content = scrape['content']
+            
+            # Calculate total elements
             element_count = 0
-            if 'classes' in content:
-                for class_info in content['classes'].values():
-                    element_count += class_info.get('count', 0)
+            if content:
+                # Count elements from all categories
+                if 'classes' in content:
+                    for class_info in content['classes'].values():
+                        element_count += class_info.get('count', 0)
+                if 'headings' in content:
+                    element_count += len(content['headings'])
+                if 'links' in content:
+                    element_count += len(content['links'])
+                if 'images' in content:
+                    element_count += len(content['images'])
+                if 'forms' in content:
+                    element_count += len(content['forms'])
+                    # Count form inputs
+                    for form in content['forms']:
+                        element_count += len(form.get('inputs', []))
             
             item = QTreeWidgetItem(self.results_tree, [
                 url,
                 date,
                 f"{element_count} elements"
             ])
-            # Store timestamp in a way that matches the save format
+            
+            # Store timestamp for loading
             save_timestamp = datetime.fromisoformat(scrape['timestamp']).strftime("%Y%m%d_%H%M%S")
             item.setData(0, Qt.ItemDataRole.UserRole, save_timestamp)
     
     def load_selected_scrape(self):
         """Load the selected scrape into the main window"""
-        selected = self.results_tree.currentItem()
-        if not selected:
-            QMessageBox.warning(self, "No Selection", "Please select a scrape to load.")
+        selected_items = self.results_tree.selectedItems()
+        
+        # Check if multiple items are selected
+        if len(selected_items) > 1:
+            QMessageBox.warning(
+                self,
+                "Multiple Selection",
+                "Please select only one scrape to load at a time.",
+                QMessageBox.StandardButton.Ok
+            )
+            return
+        
+        # Check if no items are selected
+        if not selected_items:
+            QMessageBox.warning(
+                self,
+                "No Selection",
+                "Please select a scrape to load.",
+                QMessageBox.StandardButton.Ok
+            )
             return
         
         try:
@@ -138,6 +175,7 @@ class ResultsDialog(QDialog):
             self.content_area.unload_current_scrape()
             
             # Get the timestamp stored in UserRole
+            selected = selected_items[0]  # We know we have exactly one item
             timestamp = selected.data(0, Qt.ItemDataRole.UserRole)
             
             # Load the scrape data
@@ -166,7 +204,6 @@ class ResultsDialog(QDialog):
                 self.accept()
                 QMessageBox.information(self, "Success", "Scrape loaded successfully!")
             else:
-                print(f"Failed to load scrape with timestamp: {timestamp}")  # Debug print
                 QMessageBox.critical(self, "Error", "Could not find the selected scrape file.")
                 
         except Exception as e:
