@@ -330,7 +330,7 @@ class ContentArea(QWidget):
         for element in soup.find_all(class_=True):
             classes = element.get('class')
             for class_name in classes:
-                if class_name not in parsed_data['classes']:
+                if (class_name not in parsed_data['classes']):
                     parsed_data['classes'][class_name] = {
                         'count': 0,
                         'tag_types': set(),
@@ -624,3 +624,83 @@ class ContentArea(QWidget):
     def set_html_content(self, html_content):
         """Set the HTML content in the viewer"""
         self.html_viewer.setPlainText(html_content)
+
+    def update_results_view(self, data):
+        """Update both tree view and HTML view with loaded data"""
+        try:
+            # Update tree view
+            self.results_tree.clear()
+            
+            # Add title
+            title_item = QTreeWidgetItem(self.results_tree, ['Page Title', data.get('title', 'No title')])
+            
+            # Add classes
+            if 'classes' in data:
+                classes_item = QTreeWidgetItem(self.results_tree, ['Classes', f"{len(data['classes'])} found"])
+                for class_name, info in data['classes'].items():
+                    class_item = QTreeWidgetItem(classes_item, [
+                        class_name,
+                        f"Used {info['count']} times"
+                    ])
+                    # Add tag types
+                    QTreeWidgetItem(class_item, ['Tag Types', ', '.join(info['tag_types'])])
+                    # Add samples
+                    if info['sample_content']:
+                        samples_item = QTreeWidgetItem(class_item, ['Sample Content', ''])
+                        for sample in info['sample_content']:
+                            QTreeWidgetItem(samples_item, ['Sample', sample[:100]])
+            
+            # Expand top-level items
+            for i in range(self.results_tree.topLevelItemCount()):
+                self.results_tree.topLevelItem(i).setExpanded(True)
+                
+            # Format and update HTML view
+            formatted_html = self.format_loaded_data(data)
+            self.html_viewer.setPlainText(formatted_html)
+            
+            # Enable save button
+            self.save_button.setEnabled(True)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error updating results view: {str(e)}")
+
+    def format_loaded_data(self, data):
+        """Format loaded data for HTML viewer"""
+        formatted_output = "=== Page Structure Overview ===\n\n"
+        
+        # Add title
+        formatted_output += f"Title: {data.get('title', 'No title')}\n\n"
+        
+        # Add classes
+        if 'classes' in data:
+            formatted_output += f"{'-' * 40}\nClasses\n{'-' * 40}\n"
+            for class_name, info in data['classes'].items():
+                formatted_output += f"\nClass: {class_name}\n"
+                formatted_output += f"Used {info['count']} times\n"
+                formatted_output += f"Tag types: {', '.join(info['tag_types'])}\n"
+                if info['sample_content']:
+                    formatted_output += "Sample content:\n"
+                    for sample in info['sample_content']:
+                        formatted_output += f"  - {sample[:100]}\n"
+        
+        return formatted_output
+
+    def unload_current_scrape(self):
+        """Clear current scrape data and views"""
+        # Clear current results
+        self.current_results = None
+        
+        # Clear URL input
+        self.url_input.setText("")
+        
+        # Clear tree view
+        self.results_tree.clear()
+        
+        # Clear HTML viewer
+        self.html_viewer.clear()
+        
+        # Reset browser view
+        self.browser_view.setUrl(QUrl("about:blank"))
+        
+        # Disable save button
+        self.save_button.setEnabled(False)

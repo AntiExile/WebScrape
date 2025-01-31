@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
                             QPushButton, QHBoxLayout, QLabel, QLineEdit, QMessageBox)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
 from datetime import datetime
 
 class ResultsDialog(QDialog):
@@ -107,16 +107,24 @@ class ResultsDialog(QDialog):
         scrapes = self.scrape_storage.load_scrapes()
         
         for scrape in scrapes:
-            url = scrape['url']
+            url = scrape.get('url', 'No URL')
             date = datetime.fromisoformat(scrape['timestamp']).strftime("%Y-%m-%d %H:%M:%S")
-            elements = len(scrape['data'].get('classes', {}))
+            
+            # Get element count from different possible data structures
+            content = scrape.get('data', scrape)
+            element_count = 0
+            if 'classes' in content:
+                for class_info in content['classes'].values():
+                    element_count += class_info.get('count', 0)
             
             item = QTreeWidgetItem(self.results_tree, [
                 url,
                 date,
-                f"{elements} elements"
+                f"{element_count} elements"
             ])
-            item.setData(0, Qt.ItemDataRole.UserRole, scrape['timestamp'])
+            # Store timestamp in a way that matches the save format
+            save_timestamp = datetime.fromisoformat(scrape['timestamp']).strftime("%Y%m%d_%H%M%S")
+            item.setData(0, Qt.ItemDataRole.UserRole, save_timestamp)
     
     def load_selected_scrape(self):
         """Load the selected scrape into the main window"""
@@ -124,17 +132,46 @@ class ResultsDialog(QDialog):
         if not selected:
             QMessageBox.warning(self, "No Selection", "Please select a scrape to load.")
             return
-            
-        timestamp = selected.data(0, Qt.ItemDataRole.UserRole)
-        scrape_data = self.scrape_storage.load_scrape(timestamp)
         
-        if scrape_data:
-            self.content_area.url_input.setText(scrape_data['url'])
-            self.content_area.current_results = scrape_data['data']
-            self.content_area.update_results_view(scrape_data['data'])
-            self.accept()
-        else:
-            QMessageBox.critical(self, "Error", "Could not load the selected scrape.")
+        try:
+            # First unload any current scrape
+            self.content_area.unload_current_scrape()
+            
+            # Get the timestamp stored in UserRole
+            timestamp = selected.data(0, Qt.ItemDataRole.UserRole)
+            
+            # Load the scrape data
+            scrape_data = self.scrape_storage.load_scrape(timestamp)
+            
+            if scrape_data:
+                # Update URL input
+                self.content_area.url_input.setText(scrape_data.get('url', ''))
+                
+                # Get the content from the proper structure
+                if 'data' in scrape_data and 'content' in scrape_data['data']:
+                    content = scrape_data['data']['content']
+                else:
+                    content = scrape_data.get('content', {})
+                
+                # Update current results
+                self.content_area.current_results = content
+                
+                # Update views
+                self.content_area.update_results_view(content)
+                
+                # Load URL in browser if available
+                if scrape_data.get('url'):
+                    self.content_area.browser_view.setUrl(QUrl(scrape_data['url']))
+                
+                self.accept()
+                QMessageBox.information(self, "Success", "Scrape loaded successfully!")
+            else:
+                print(f"Failed to load scrape with timestamp: {timestamp}")  # Debug print
+                QMessageBox.critical(self, "Error", "Could not find the selected scrape file.")
+                
+        except Exception as e:
+            print(f"Error loading scrape: {e}")  # Debug print
+            QMessageBox.critical(self, "Error", f"Failed to load scrape: {str(e)}")
     
     def filter_results(self, text):
         """Filter the results tree based on search text"""
