@@ -85,48 +85,28 @@ class ContentArea(QWidget):
         
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)  # Remove all spacing
+        layout.setContentsMargins(0, 0, 0, 0)  # Remove all margins
 
-        # Control section (URL input and buttons)
-        control_layout = QHBoxLayout()
-        
-        # URL input
-        self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("Enter URL to scrape...")
-        self.url_input.setFixedHeight(40)
-        control_layout.addWidget(self.url_input)
-        
-        # Buttons
-        self.start_button = QPushButton("Start Scraping")
-        self.start_button.setFixedHeight(40)
-        self.start_button.setProperty("class", "primary-button")
-        self.start_button.clicked.connect(self.start_scraping)
-        control_layout.addWidget(self.start_button)
-        
-        self.save_button = QPushButton("Save Results")
-        self.save_button.setEnabled(False)
-        self.save_button.setObjectName("save_button")  # Add this line
-        self.save_button.clicked.connect(self.save_results)
-        control_layout.addWidget(self.save_button)
-        
         # Main content area
         content_layout = QHBoxLayout()
+        content_layout.setSpacing(0)  # Remove spacing between browser and right panel
+        content_layout.setContentsMargins(0, 0, 0, 0)  # Remove all content margins
         
-        # Browser view on the left
+        # Browser view on the left with increased stretch
         self.browser_view = BrowserView()
         self.browser_view.recorder.interaction_recorded.connect(self.on_interaction)
         self.browser_view.loadFinished.connect(self.update_html_view)
-        content_layout.addWidget(self.browser_view, stretch=2)
+        content_layout.addWidget(self.browser_view, stretch=4)
         
         # Right side splitter
         right_splitter = QSplitter(Qt.Orientation.Vertical)
+        right_splitter.setContentsMargins(0, 0, 0, 0)
         
         # Results tree in top half
         self.results_tree = QTreeWidget()
         self.results_tree.setHeaderLabels(['Element', 'Details'])
         self.results_tree.setColumnWidth(0, 200)
-        self.results_tree.itemDoubleClicked.connect(self.simulate_interaction)
         right_splitter.addWidget(self.results_tree)
         
         # HTML viewer in bottom half
@@ -136,9 +116,6 @@ class ContentArea(QWidget):
         right_splitter.addWidget(self.html_viewer)
         
         content_layout.addWidget(right_splitter, stretch=1)
-        
-        # Add layouts to main layout
-        layout.addLayout(control_layout)
         layout.addLayout(content_layout)
         
         self.setLayout(layout)

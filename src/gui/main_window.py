@@ -44,6 +44,13 @@ class MainWindow(QMainWindow):
         self.content_area = ContentArea()
         content_layout.addWidget(self.content_area)
         
+        # Connect header buttons and share references
+        self.header.start_button.clicked.connect(self.content_area.start_scraping)
+        self.header.save_button.clicked.connect(self.content_area.save_results)
+        self.content_area.save_button = self.header.save_button  # Share save button reference
+        self.content_area.start_button = self.header.start_button  # Share start button reference
+        self.content_area.url_input = self.header.url_input  # Share URL input reference
+        
         content_widget = QWidget()
         content_widget.setLayout(content_layout)
         self.layout.addWidget(content_widget)

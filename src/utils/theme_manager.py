@@ -4,24 +4,13 @@ from PyQt6.QtCore import Qt
 # Update ThemeManager with comprehensive styling
 class ThemeManager:
     def __init__(self):
-        # Change from "light" to "dark"
-        self.current_theme = "dark"
-        self.themes = {
-            "light": {
-                "background_start": QColor(255, 255, 255),
-                "background_end": QColor(230, 220, 255),
-                "text": QColor(0, 0, 0),
-                "accent": QColor(100, 50, 150),
-                "secondary": QColor(180, 160, 220),
-                "button_bg": QColor(240, 235, 255)},
-            "dark": {
-                "background_start": QColor(40, 30, 60),
-                "background_end": QColor(80, 70, 120),
-                "button_bg": QColor(60, 50, 90),
-                "text": QColor(255, 255, 255),
-                "accent": QColor(180, 160, 220),
-                "secondary": QColor(100, 80, 140)
-            }
+        self.theme = {
+            "background_start": QColor(40, 30, 60),
+            "background_end": QColor(80, 70, 120),
+            "button_bg": QColor(60, 50, 90),
+            "text": QColor(255, 255, 255),
+            "accent": QColor(180, 160, 220),
+            "secondary": QColor(100, 80, 140)
         }
     
     def toggle_theme(self, window):
@@ -37,7 +26,7 @@ class ThemeManager:
 
     def apply_theme(self, window):
         try:
-            theme = self.themes[self.current_theme]
+            theme = self.theme
             
             gradient = f"""
                 QMainWindow {{
