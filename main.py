@@ -10,26 +10,28 @@ from src.gui.main_window import MainWindow
 from src.utils.theme_manager import ThemeManager
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QPainterPath
 
-def create_rounded_icon(path, size=64):
+def create_rounded_icon(path, size=32):  # Reduced size from 64 to 32
     # Create source pixmap
     source = QPixmap(path)
     source = source.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, 
                          Qt.TransformationMode.SmoothTransformation)
     
-    # Create result pixmap
+    # Create result pixmap with transparent background
     result = QPixmap(size, size)
     result.fill(Qt.GlobalColor.transparent)
     
-    # Create painter for final image
+    # Create painter and set render hints
     painter = QPainter(result)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
     
-    # Create circular clip path
+    # Create rounded path
     path = QPainterPath()
-    path.addEllipse(0, 0, size, size)
-    painter.setClipPath(path)
+    path.addRoundedRect(0, 0, size, size, size/2, size/2)
     
-    # Draw the image
+    # Draw source pixmap with rounded path
+    painter.setClipPath(path)
     painter.drawPixmap(0, 0, source)
     painter.end()
     
@@ -174,6 +176,8 @@ def main():
     
     theme_manager = ThemeManager()
     
+    app = QApplication(sys.argv)
+    
     # Create and set rounded icon using relative path
     rounded_icon = create_rounded_icon(icon_path)
     app.setWindowIcon(rounded_icon)
@@ -188,4 +192,9 @@ if __name__ == "__main__":
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
     app = QApplication(sys.argv)
+    
+    # Set the application icon here
+    rounded_icon = create_rounded_icon(icon_path)
+    app.setWindowIcon(rounded_icon)
+    
     sys.exit(main())

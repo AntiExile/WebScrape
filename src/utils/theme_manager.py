@@ -102,21 +102,60 @@ class ThemeManager:
                     color: {theme['text'].name()};
                     border: 1px solid {theme['accent'].name()};
                     border-radius: 5px;
+                    padding: 5px;
+                    min-height: 100px;
+                    max-height: 300px;
                 }}
                 
                 QTreeWidget::item {{
-                    padding: 5px;
+                    padding: 2px;
+                    margin: 0px;
+                    border-radius: 3px;
                 }}
                 
                 QTreeWidget::item:selected {{
                     background-color: {theme['accent'].name()};
-                    color: white;
+                    color: {theme['text'].name()};
                 }}
                 
                 QTreeWidget::branch {{
-                    background: {theme['background_start'].name()};
+                    background: transparent;
+                }}
+                
+                QTreeWidget QHeaderView::section {{
+                    background-color: {theme['button_bg'].name()};
+                    color: {theme['text'].name()};
+                    padding: 5px;
                     border: none;
-                    padding: 2px;
+                    border-radius: 3px;
+                }}
+                
+                QHeaderView::section {{
+                    background-color: {theme['background_start'].name()};
+                    color: {theme['text'].name()};
+                    border: none;
+                    border-radius: 0px;
+                    padding: 4px;
+                }}
+                
+                QSplitter {{
+                    background-color: {theme['background_start'].name()};
+                }}
+                
+                QSplitter::handle {{
+                    background-color: {theme['accent'].name()};
+                    height: 2px;
+                }}
+                
+                QTextEdit {{
+                    background-color: {theme['background_start'].name()};
+                    color: {theme['text'].name()};
+                    border: 1px solid {theme['accent'].name()};
+                    border-radius: 5px;
+                    padding: 5px;
+                    margin: 0px;
+                    min-height: 100px;
+                    max-height: 300px;
                 }}
             """
             
